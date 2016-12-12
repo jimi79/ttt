@@ -1,0 +1,13 @@
+build a tree, and assume the other will pick the best possibility for each steps, and beat him.
+
+the rest is done by qlearning actually. and we pick the same way. what is the diff then ?
+
+ah yeah, we work on the other's qlearning. we simulate our qlearning, and his, and we plan from there. 
+
+is that enough ? 
+
+what if do just pure qlearning
+
+well, qlearning will pick the status with the best output, but if it happens only once, then it will insist of trying it again, and it won't happen again, because the opponent has a best way.
+
+we need all cells to fade over time, maybe, somethg like that.
