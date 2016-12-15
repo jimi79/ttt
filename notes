@@ -1,0 +1,166 @@
+for each possible outcome :
+	if points=1000, i take it and add it to the winlist
+	else
+	i check the best outcome from here (calculate again)
+		if it's 1000, i take it and add it to the loselist
+		else
+			if it's >0, i add it to the badlist
+			else
+				i add it to the good list
+
+
+
+
+
+		
+
+so it's like
+	win, best, list=get_best(base)
+	if len(win)>0:
+		i play random.win
+	else:
+	  for i in list
+			lose, best, list=gest_best(i)
+			if best is empty then
+				goodlist.append(i) # that status leads to nothg special for him
+			else
+				badlist.append(i) # that status leads to somethg good for him
+
+
+why don't i store bad stuff. i should...
+meaning that learn_points for win should be learn_points(board2+board, -1000)
+learn_points for tie should be board+board2 board2+board=-500
+
+
+for each outcome
+	we get the best, even if all are negatives
+
+and we do that two times, and we pick the outcome that :
+- doesn't lead to anythg positive on the second turn
+- pick the most positive thing on the first turn
+
+i mean for each outcome, we store somewhere the points for the first turn and the second, and we go with that to find the best scenario.
+
+
+actually, i just need to pick from the list items for which score_b < score_a
+
+
+so 
+loop on possible outcomes
+	get best item
+
+	(update status)
+
+	if best = 1000 then we use that possibility and we break
+
+	else
+		loop on possible outocome (loop on zip outcome and how to get to them)
+			get btest item
+			(update status)
+
+				add(myscore, oppscore, action1, action2, status1, status2) # status1= status_original+action1 , status2=status1+action2
+
+
+and then we loop on the list of 
+
+
+
+pff, i said that leads_to would lead to the opponennt_array.
+
+actually, that is wrong, all of that is wrong.
+
+should have one list
+board+board2 should lead to board+board2. and i should pick the move that leads to the best for me, and the worst for the other.
+
+and how do i calculate ? because i need to calcualte all
+
+000
+000
+000
+
+leads to
+
+000
+010
+000
+or
+001
+000
+000
+
+001
+000
+000
+
+leads to
+021
+000
+000
+or 
+201
+000
+000
+
+021
+210
+000 
+leadsto
+021
+210
+100 which is 1000
+
+221
+210
+001 
+leads to
+221
+210
+201 which is -1000
+
+
+
+i am just missing the sense. which action can leads to a list if you play, and another list if u don't polay
+that is the right thing
+
+and points_if_you_play != points_if_you_dont_play
+
+so
+010
+000
+010
+
+leads to my_turn
+010
+010
+010 
+
+and leads to opp_turn
+010
+020
+010
+
+and points_my_turn =max leads_myturn * 0.8
+
+and points_opp_turn = max
+
+and then, when i play, for each leads_my_turn, i take the list with the most points
+
+and then, for each item, i take the list item with the less points
+
+
+
+
+in main, if i win, i update with 1000 and -1000 the opposite board
+and for each turn, i update leads_to_my_turn, like old_status + action = new status
+and leads_to_opp_turn with old_status_inverture + action = new_status inverted
+
+-----
+
+no, leads and leadso are actually identical.
+we use one list, and we try our turn and the bad guy turns. it's just the points that change, it's bad. 1000-points. ACtually, i could do a sum : 10 times his score + my score
+
+
+
+[a[0] for a in alice.statuses.items() if a[1].lt.count(114703)!=0][0:10]
+[a[0] for a in alice.statuses.items() if a[1].points==1000][0:10]
+

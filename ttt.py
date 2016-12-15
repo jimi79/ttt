@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 import importlib
+import os
+import pickle
 import random
 
 def array_to_integer(array):
@@ -8,6 +10,11 @@ def array_to_integer(array):
 
 def substract(lista, listb):
 	return [c for c in lista if listb.count(c)==0] 
+
+def inverse_int(val):
+	a=integer_to_array(val)
+	b=a[9:18]+a[0:9]
+	return array_to_integer(b)
 
 def integer_to_array(integer):
 	a=[int(x) for x in bin(integer)[2:]]	
@@ -19,11 +26,8 @@ def integer_to_array(integer):
 class Status:
 	def __init__(self):
 		self.points=0 # my points
-		self.pointso=0 # opponent's points
 		self.lt=[]
-		self.lto=[] # leads to
 		self.htri=[] # How To Rich It : action that has to be taken to go to that new status
-		self.htrio=[] # How To Rich It : action that has to be taken to go to that new status
 		self.how_to_reach_it=[] # action that has to be taken to go to that new status
 		self.name=None
 		self.verbose=False
@@ -37,26 +41,16 @@ class Status:
 			l.append(status)
 			h.append(action) 
 
-	def addo(self, action, status):
-		l=self.lto
-		h=self.htrio
-		if l.count(status)==0:
-			l.append(status)
-			h.append(action) 
-
 class AI:
 	def __init__(self):
 	# i learn that before leads to after
 		self.statuses={} # status
 
-	def play(self, input_, possible_actions, verbose=False): 
-		id_=array_to_integer(input_) 
-
+	def play_integer(self, id_, possible_actions, verbose):
 		# first we get the max of what we can do
 		win=[]
 		loss=[] 
-		good_actions=[]
-		bad_actions=[]
+		known_actions=[]
 		unknown_actions=possible_actions
 
 		self.calculate(id_) # we just update the id_status 
@@ -70,37 +64,40 @@ class AI:
 					if unknown_actions.count(act2):
 						unknown_actions.remove(act2)
 				else:
-					for id3,act3 in zip(status2.lto, status2.htrio): 
-						status3=self.statuses.get(id2) # status leads to status2 
-						if status3.pointso==1000:
-							loss.append(act3)
-							if unknown_actions.count(act3):
-								unknown_actions.remove(act3)
-						else:
-							if status3.pointso>0:
-								bad_actions.append((status3.points, act3)) # we'll sort it afterwards 
+					id2b=inverse_int(id2) # we check through the eyes of the opponent
+					self.calculate(id2b) # we just update the id_status 
+					status2b=self.statuses.get(id2b)
+					if not status2b is None:
+						for id3,act3 in zip(status2.lt, status2.htri): 
+							status3=self.statuses.get(id2b) # status leads to status2 
+							if status3.points==1000:
+								loss.append(act3)
+								if unknown_actions.count(act3):
+									unknown_actions.remove(act3)
 							else:
-								good_actions.append((status2.points, act3)) # we'll sort it afterwards
-							if unknown_actions.count(act3):
-								unknown_actions.remove(act3)
+								known_actions.append((10*(1000-status3.points)+status2.points, act3)) # we'll sort it afterwards 
+								if unknown_actions.count(act3):
+									unknown_actions.remove(act3)
 
 
-		bad_actions=sorted(bad_actions) # last item is the best
-		good_actions=sorted(good_actions) # last item is the best
+		known_actions=sorted(known_actions) # last item is the best
 
 		if len(win)!=0:
 			best_action=random.choice(win)
-		if len(good_actions)!=0:
-			best_action=random.choice(good_actions)
-			best_action=best_action[1]
-		if len(unknown_actions)!=0:
-			best_action=random.choice(unknown_actions)
-		if len(bad_actions)!=0:
-			best_action=random.choice(bad_actions)
-			best_action=best_action[1] 
-
-
+		else:
+			if len(known_actions)!=0:
+				best_action=random.choice(known_actions)
+				if best_action[0]<0 and len(unknown_actions)!=0: # if the action we picked, that is the best, is still bad, then we check if there is an unknown action to try out
+					best_action=random.choice(unknown_actions)
+				else:
+					best_action=best_action[1]
+			else:
+				best_action=random.choice(unknown_actions)
 		return best_action
+
+	def play(self, input_, possible_actions, verbose=False): 
+		id_=array_to_integer(input_) 
+		return self.play_integer(id_, possible_actions, verbose)
 
 	def learn_path(self, old_status, action, new_status): #old_status and new_status are integers 
 		old_status=array_to_integer(old_status)
@@ -109,24 +106,11 @@ class AI:
 			self.statuses[old_status]=Status()
 		self.statuses[old_status].add(action, new_status)
 
-	def learn_patho(self, old_status, action, new_status): #old_status and new_status are integers 
-		old_status=array_to_integer(old_status)
-		new_status=array_to_integer(new_status)
-		if self.statuses.get(old_status)==None:
-			self.statuses[old_status]=Status()
-		self.statuses[old_status].addo(action, new_status)
-
 	def learn_points(self, status, points):
 		status=array_to_integer(status)
 		if self.statuses.get(status)==None:
 			self.statuses[status]=Status()
 		self.statuses[status].points=points 
-
-	def learn_pointso(self, status, points):
-		status=array_to_integer(status)
-		if self.statuses.get(status)==None:
-			self.statuses[status]=Status()
-		self.statuses[status].pointso=points 
 
 	def calculate(self, id_):
 		a=self.statuses.get(id_)
@@ -135,15 +119,16 @@ class AI:
 			self.statuses[id_]=a
 		p=[] 
 		for i in a.lt:
-			s=self.statuses.get(id_)
+			s=self.statuses.get(i)
 			if s!=None:
 				p.append(s.points)
 		if len(p)>0:
-			self.points=0.8*max(p)
-		p=[]
-		for i in a.lto:
-			s=self.statuses.get(id_)
-			if s!=None:
-				p.append(s.pointso)
-		if len(p)>0:
-			self.points=0.8*max(p) 
+			a.points=0.8*max(p)
+
+	def save(self):
+		pickle.dump(self.statuses, open('ttt.dat', 'wb'))
+
+	def try_load(self):
+		if os.path.exists('ttt.dat'):
+			self.statuses=pickle.load(open('ttt.dat', 'rb')) 
+			print("loaded")
