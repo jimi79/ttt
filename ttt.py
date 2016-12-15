@@ -49,7 +49,6 @@ class AI:
 	def play_integer(self, id_, possible_actions, verbose):
 		# first we get the max of what we can do
 		win=[]
-		loss=[] 
 		known_actions=[]
 		unknown_actions=possible_actions
 
@@ -60,6 +59,8 @@ class AI:
 				self.calculate(id2) # we just update the id_status 
 				status2=self.statuses.get(id2) # status leads to status2 
 				if status2.points==1000:
+					if verbose:
+						print("%d -%d> %d (win)" % (id_, act2, id2))
 					win.append(act2)
 					if unknown_actions.count(act2):
 						unknown_actions.remove(act2)
@@ -67,32 +68,55 @@ class AI:
 					id2b=inverse_int(id2) # we check through the eyes of the opponent
 					self.calculate(id2b) # we just update the id_status 
 					status2b=self.statuses.get(id2b)
-					if not status2b is None:
-						for id3,act3 in zip(status2.lt, status2.htri): 
-							status3=self.statuses.get(id2b) # status leads to status2 
-							if status3.points==1000:
-								loss.append(act3)
-								if unknown_actions.count(act3):
-									unknown_actions.remove(act3)
-							else:
-								known_actions.append((10*(1000-status3.points)+status2.points, act3)) # we'll sort it afterwards 
-								if unknown_actions.count(act3):
-									unknown_actions.remove(act3)
+					max_=0 
+					if not status2b is None: 
+# i still should get the max of his score. don't recall why i cancelled that again, pff
+# each of my move should be caracterized by the max score he can do, and sorted on his score, then mine.
+# no need to *10 his score, it's the main sorting
+						for id3,act3 in zip(status2b.lt, status2b.htri): 
+							status3=self.statuses.get(id3) # status leads to status2 
+							if not status3 is None:
+								if status3.points>max_:
+									max_=status3.points
+								if verbose:
+									print("%d -%d> %d -> %d -%d> %d (me %f, opp %f)" % (id_, act2, id2, id2b, act3, id3, status2.points, status3.points))
+					known_actions.append((-max_, status2.points, act2))
+					if unknown_actions.count(act2):
+						unknown_actions.remove(act2)
 
-
-		known_actions=sorted(known_actions) # last item is the best
 
 		if len(win)!=0:
 			best_action=random.choice(win)
-		else:
-			if len(known_actions)!=0:
+		else: 
+			known_actions=sorted(known_actions, reverse=True) # last item is the best 
+
+	# not good, i play always the same thing by picking the first
+# i should reduce known_actions to get only its best.
+			if verbose:
+				print("reducing known_actions to its best outcomes")
+				print(known_actions)
+			if len(known_actions)>0:
+				best_opp=known_actions[0][0]
+				best_me=known_actions[0][1]
+				known_actions=[i for i in known_actions if i[0]==known_actions[0][0] and i[1]==known_actions[0][1]] 
+				if verbose:
+					print(known_actions)
+
 				best_action=random.choice(known_actions)
 				if best_action[0]<0 and len(unknown_actions)!=0: # if the action we picked, that is the best, is still bad, then we check if there is an unknown action to try out
 					best_action=random.choice(unknown_actions)
 				else:
-					best_action=best_action[1]
+					best_action=best_action[2]
 			else:
-				best_action=random.choice(unknown_actions)
+				if len(unknown_actions) > 0:
+					best_action=random.choice(unknown_actions)
+
+		if verbose:
+			print(win)
+			print(known_actions)
+			print(unknown_actions)
+			print("I play %d" % best_action)
+
 		return best_action
 
 	def play(self, input_, possible_actions, verbose=False): 

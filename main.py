@@ -99,24 +99,30 @@ def test_play(int_):
 	b=ttt.integer_to_array(int_)
 	board=b[0:9]
 	board2=b[9:18]
-	one_move(alice, alice, board, board2, verbose=True)	
+	return one_move(alice, alice, board, board2, verbose=True)	
 
 def one_move(player, player2, board, board2, verbose=False):
 	old_board=board+board2
+	old_board2=board+board2
 	possible_actions=get_available_actions(list_or(board, board2))
+	#print(ttt.array_to_integer(old_board))
 	move=player.play(board + board2, possible_actions, verbose=verbose) # those are lists 
 	board[move]=1
 	new_board=board+board2
+	new_board2=board+board2
 	player.learn_path(old_board, move, new_board)
+	player.learn_path(old_board2, move, new_board2)
 	win=is_win(board+board2)	
 	tie=False
 	if not win:
 		tie=is_tie(board, board2)
 	if win:
 		player.learn_points(board+board2, 1000)
+		player.learn_points(board2+board, -1000)
 	if tie:
 		player.learn_points(board+board2, -100)
-	return win, tie
+		player.learn_points(board2+board, -100)
+	return win, tie, move
 
 # should i learn it it can loose ? yeah of course
 
@@ -127,14 +133,19 @@ def one_game(history_printed=False, verbose=False):
 	board_a=copy.copy(zeros)
 	board_b=copy.copy(zeros) 
 	end_of_game=False
+	winner=None
 	while not end_of_game:
-		win, tie=one_move(alice, alice, board_a, board_b, verbose=verbose)
+		win, tie, move=one_move(alice, alice, board_a, board_b, verbose=verbose)
+		if win:
+			winner="alice"
 		h=[a+b*2 for a,b in zip(board_a, board_b)]
 		history_points.append(ttt.array_to_integer(board_a+board_b))
 		history_points_o.append(ttt.array_to_integer(board_b+board_a))
 		history.append(h)
 		if not win and not tie:
-			win, tie=one_move(alice, alice, board_b, board_a, verbose=verbose)
+			win, tie, move=one_move(alice, alice, board_b, board_a, verbose=verbose)
+			if win:
+				winner="bob"
 			h=[a+b*2 for a,b in zip(board_a, board_b)]
 			history_points.append(ttt.array_to_integer(board_a+board_b))
 			history_points_o.append(ttt.array_to_integer(board_b+board_a))
@@ -145,16 +156,33 @@ def one_game(history_printed=False, verbose=False):
 		print_history(history)
 		print_history_points(history_points)
 		print_history_points(history_points_o)
+	return winner
 
-def multiples_games(cpt, history_printed=False, verbose=False):
+def multiples_games(cpt, history_printed=False, verbose=False, display=100, reset=1000):
 	a=0
 	print("%d %%" % a)
-	for i in range(cpt):
+	for i in range(cpt): 
+		if i % reset==0:
+			totalice=0
+			totbob=0
+			tottie=0
+			tot=0
+		tot+=1
 		b=int(i/cpt*100)
 		if b!=a:
 			print("%d %%" % b)
 			a=b
-		one_game(history_printed=history_printed, verbose=verbose)
+		winner=one_game(history_printed=history_printed, verbose=verbose)
+		if winner=="alice":
+			totalice+=1
+		else:
+			if winner=="bob":
+				totbob+=1
+			else:
+				tottie+=1
+		if i% display==0:
+			print("alice %.2f bob %.2f tie %.2f cpt %d" % (totalice/tot*100, totbob/tot*100, tottie/tot*100, tot))
+
 	alice.save()
 
 alice.try_load()
