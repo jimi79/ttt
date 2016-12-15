@@ -103,13 +103,13 @@ def test_play(int_):
 
 def one_move(player, player2, board, board2, verbose=False):
 	old_board=board+board2
-	old_board2=board+board2
+	old_board2=board2+board
 	possible_actions=get_available_actions(list_or(board, board2))
 	#print(ttt.array_to_integer(old_board))
 	move=player.play(board + board2, possible_actions, verbose=verbose) # those are lists 
 	board[move]=1
 	new_board=board+board2
-	new_board2=board+board2
+	new_board2=board2+board
 	player.learn_path(old_board, move, new_board)
 	player.learn_path(old_board2, move, new_board2)
 	win=is_win(board+board2)	
@@ -161,8 +161,9 @@ def one_game(history_printed=False, verbose=False):
 def multiples_games(cpt, history_printed=False, verbose=False, display=100, reset=1000):
 	a=0
 	print("%d %%" % a)
+	tot=reset
 	for i in range(cpt): 
-		if i % reset==0:
+		if tot == reset:
 			totalice=0
 			totbob=0
 			tottie=0
@@ -180,7 +181,7 @@ def multiples_games(cpt, history_printed=False, verbose=False, display=100, rese
 				totbob+=1
 			else:
 				tottie+=1
-		if i% display==0:
+		if tot % display==0:
 			print("alice %.2f bob %.2f tie %.2f cpt %d" % (totalice/tot*100, totbob/tot*100, tottie/tot*100, tot))
 
 	alice.save()

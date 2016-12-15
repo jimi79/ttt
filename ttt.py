@@ -68,19 +68,10 @@ class AI:
 					id2b=inverse_int(id2) # we check through the eyes of the opponent
 					self.calculate(id2b) # we just update the id_status 
 					status2b=self.statuses.get(id2b)
-					max_=0 
 					if not status2b is None: 
-# i still should get the max of his score. don't recall why i cancelled that again, pff
-# each of my move should be caracterized by the max score he can do, and sorted on his score, then mine.
-# no need to *10 his score, it's the main sorting
-						for id3,act3 in zip(status2b.lt, status2b.htri): 
-							status3=self.statuses.get(id3) # status leads to status2 
-							if not status3 is None:
-								if status3.points>max_:
-									max_=status3.points
-								if verbose:
-									print("%d -%d> %d -> %d -%d> %d (me %f, opp %f)" % (id_, act2, id2, id2b, act3, id3, status2.points, status3.points))
-					known_actions.append((-max_, status2.points, act2))
+						if verbose:
+							print("%d -%d> %d -> %d (me %f, opp %f)" % (id_, act2, id2, id2b, status2.points, status2b.points))
+					known_actions.append((status2b.points, status2.points, act2))
 					if unknown_actions.count(act2):
 						unknown_actions.remove(act2)
 
@@ -103,7 +94,7 @@ class AI:
 					print(known_actions)
 
 				best_action=random.choice(known_actions)
-				if best_action[0]<0 and len(unknown_actions)!=0: # if the action we picked, that is the best, is still bad, then we check if there is an unknown action to try out
+				if best_action[0]<=0 and len(unknown_actions)!=0: # if the action we picked, that is the best, is still bad, then we check if there is an unknown action to try out
 					best_action=random.choice(unknown_actions)
 				else:
 					best_action=best_action[2]
