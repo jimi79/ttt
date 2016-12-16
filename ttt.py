@@ -65,13 +65,9 @@ class AI:
 					if unknown_actions.count(act2):
 						unknown_actions.remove(act2)
 				else:
-					id2b=inverse_int(id2) # we check through the eyes of the opponent
-					self.calculate(id2b) # we just update the id_status 
-					status2b=self.statuses.get(id2b)
-					if not status2b is None: 
-						if verbose:
-							print("%d -%d> %d -> %d (me %f, opp %f)" % (id_, act2, id2, id2b, status2.points, status2b.points))
-					known_actions.append((status2b.points, status2.points, act2))
+					if verbose:
+						print("%d -%d> %d (me %f)" % (id_, act2, id2, status2.points))
+					known_actions.append((status2.points, act2))
 					if unknown_actions.count(act2):
 						unknown_actions.remove(act2)
 
@@ -87,17 +83,14 @@ class AI:
 				print("reducing known_actions to its best outcomes")
 				print(known_actions)
 			if len(known_actions)>0:
-				best_opp=known_actions[0][0]
-				best_me=known_actions[0][1]
-				known_actions=[i for i in known_actions if i[0]==known_actions[0][0] and i[1]==known_actions[0][1]] 
+				known_actions=[i for i in known_actions if i[0]==known_actions[0][0]] 
 				if verbose:
-					print(known_actions)
-
+					print(known_actions) 
 				best_action=random.choice(known_actions)
 				if best_action[0]<=0 and len(unknown_actions)!=0: # if the action we picked, that is the best, is still bad, then we check if there is an unknown action to try out
 					best_action=random.choice(unknown_actions)
 				else:
-					best_action=best_action[2]
+					best_action=best_action[1]
 			else:
 				if len(unknown_actions) > 0:
 					best_action=random.choice(unknown_actions)

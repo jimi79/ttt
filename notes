@@ -164,3 +164,9 @@ we use one list, and we try our turn and the bad guy turns. it's just the points
 [a[0] for a in alice.statuses.items() if a[1].lt.count(114703)!=0][0:10]
 [a[0] for a in alice.statuses.items() if a[1].points==1000][0:10]
 
+
+
+not good only one list, because when i learn, do i learn if i play, or if the other play. so why did i cancel that ? Well, it's X turn, meaning i shouldn't learn when it's not my turn. i should learn only for myself, and use that xp to foresee what the opponent would do
+
+i need pointsme and pointsyou. one is max, other is min. the rest is ok
+can't i have a ql that would store the outcome after we both play ? or after my turn ?
