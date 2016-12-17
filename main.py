@@ -105,13 +105,13 @@ def one_move(player, player2, board, board2, verbose=False):
 	old_board=board+board2
 	old_board2=board2+board
 	possible_actions=get_available_actions(list_or(board, board2))
+	player.init_status(board+board2, possible_actions) 
+	player.init_status(board2+board, possible_actions) 
 	#print(ttt.array_to_integer(old_board))
 	move=player.play(board + board2, possible_actions, verbose=verbose) # those are lists 
 	board[move]=1
 	new_board=board+board2
 	new_board2=board2+board
-	player.learn_path(old_board, move, new_board)
-	player.learn_path_opponent(old_board2, move, new_board2)
 	win=is_win(board+board2)	
 	tie=False
 	if not win:
@@ -124,6 +124,8 @@ def one_move(player, player2, board, board2, verbose=False):
 		player.learn_points(board2+board, -1)
 	if verbose:
 		print_game(board,board2)
+	player.learn_path(old_board, move, new_board)
+	player.learn_path_opponent(old_board2, move, new_board2)
 	return win, tie, move
 
 # should i learn it it can loose ? yeah of course

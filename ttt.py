@@ -25,11 +25,8 @@ def integer_to_array(integer):
 
 class Status:
 	def __init__(self):
-		self.lt=[]
-		self.lto=[]
-		self.htri=[] # How To Rich It : action that has to be taken to go to that new status
-		self.htrio=[] # How To Rich It : action that has to be taken to go to that new status
-# true or false ? i think true
+		self.lt={}
+		self.lto={}
 		self.minmax=0 # means i took the max of the next one, the min of the next one (unless i reached 1000 or course)
 		self.maxmin=0
 
@@ -65,7 +62,7 @@ class AI:
 		#max_=None # 0 points is not a goal to reach
 		txt=[]
 		if s is not None:
-			for a2,id2 in zip(s.htri, s.lt):
+			for a2,id2 in s.lt.items():
 				s2=self.statuses.get(id2)
 				if s2 is not None: 
 					if verbose:
@@ -79,7 +76,7 @@ class AI:
 					acts.append((s2.minmax,a2)) 
 				else:
 					if verbose:
-						txt.append("%d->%d(?)" % (a2,id2))
+						txt.append("%d->%s(?)" % (a2,id2))
 
 		if verbose:
 			print(",".join(txt))
@@ -107,22 +104,25 @@ class AI:
 		id_=array_to_integer(input_) 
 		return self.play_integer(id_, possible_actions, verbose)
 
+	def init_status(self, id_, possible_actions):
+		id_=array_to_integer(id_)
+		s=self.statuses.get(id_)
+		if s is None:
+			s=Status()
+			self.statuses[id_]=s
+			for i in possible_actions:
+				s.lt[i]=None
+				s.lto[i]=None
+
 	def learn_path(self, old_status, action, new_status): #old_status and new_status are integers 
 		old_status=array_to_integer(old_status)
 		new_status=array_to_integer(new_status)
-		if self.statuses.get(old_status)==None:
-			self.statuses[old_status]=Status()
-		self.statuses[old_status].add(action, new_status)
-		self.calculate(old_status)
+		self.statuses[old_status].lt[action]=new_status
 
 	def learn_path_opponent(self, old_status, action, new_status): #old_status and new_status are integers 
 		old_status=array_to_integer(old_status)
 		new_status=array_to_integer(new_status)
-		if self.statuses.get(old_status)==None:
-			self.statuses[old_status]=Status()
-		self.statuses[old_status].add_opponent(action, new_status)
-		self.calculate(old_status)
-
+		self.statuses[old_status].lto[action]=new_status
 
 	def learn_points(self, status, points): # doesn't change if it's me or the opponent
 		status=array_to_integer(status)
@@ -132,20 +132,23 @@ class AI:
 			self.statuses[status]=s
 		s.minmax=points
 		s.maxmin=points
+		self.calculate(status)
 
 	def calculate(self, id_):
 		s=self.statuses.get(id_)
 		if s is not None:
 			l=[]
-			for i in s.lt: # i need to take the max of it, so i'll update maxmin
-				s2=self.statuses.get(i)
+			for i in s.lt.keys(): # i need to take the max of it, so i'll update maxmin
+				i2=s.lt[i] 
+				s2=self.statuses.get(i2)
 				if s2 is not None:
 					l.append(s2.minmax)
 			if len(l)>0:
 				s.maxmin=max(l)
 			l=[]
 			for i in s.lto: # i need to take the max of it, so i'll update maxmin
-				s2=self.statuses.get(i)
+				i2=s.lt[i] 
+				s2=self.statuses.get(i2)
 				if s2 is not None:
 					l.append(s2.maxmin)
 			if len(l)>0:
