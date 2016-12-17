@@ -25,10 +25,14 @@ def integer_to_array(integer):
 
 class Status:
 	def __init__(self):
-		self.points=0 # my points
 		self.lt=[]
+		self.lto=[]
 		self.htri=[] # How To Rich It : action that has to be taken to go to that new status
-		self.how_to_reach_it=[] # action that has to be taken to go to that new status
+		self.htrio=[] # How To Rich It : action that has to be taken to go to that new status
+# true or false ? i think true
+		self.minmax=0 # means i took the max of the next one, the min of the next one (unless i reached 1000 or course)
+		self.maxmin=0
+
 		self.name=None
 		self.verbose=False
 		self.filename=None # no idea how i will store these two arrays of objects
@@ -41,65 +45,52 @@ class Status:
 			l.append(status)
 			h.append(action) 
 
+	def add_opponent(self, action, status):
+		l=self.lto
+		h=self.htrio
+		if l.count(status)==0:
+			l.append(status)
+			h.append(action) 
+
 class AI:
 	def __init__(self):
 	# i learn that before leads to after
 		self.statuses={} # status
 
 	def play_integer(self, id_, possible_actions, verbose):
-		# first we get the max of what we can do
-		win=[]
-		known_actions=[]
-		unknown_actions=possible_actions
-
-		self.calculate(id_) # we just update the id_status 
-		status=self.statuses.get(id_)
-		if not (status is None): 
-			for id2,act2 in zip(status.lt, status.htri): # status, action 
-				self.calculate(id2) # we just update the id_status 
-				status2=self.statuses.get(id2) # status leads to status2 
-				if status2.points==1000:
+# we generate a list of maxmin, based on possible outcomes
+		acts=[]
+		s=self.statuses.get(id_)
+		max_=1 # 0 points is not a goal to reach
+		if s is not None:
+			for a2,id2 in zip(s.htri, s.lt):
+				s2=self.statuses.get(id2)
+				if s2 is not None: 
 					if verbose:
-						print("%d -%d> %d (win)" % (id_, act2, id2))
-					win.append(act2)
-					if unknown_actions.count(act2):
-						unknown_actions.remove(act2)
+						print("%d leads to %d which is %d points" % (a2,id2,s2.maxmin))
+					if s2.maxmin>max_:
+						acts=[]
+						max_=s2.maxmin
+					if s2.maxmin>=max_: # can only be = or < actually
+						acts.append(a2) 
 				else:
 					if verbose:
-						print("%d -%d> %d (me %f)" % (id_, act2, id2, status2.points))
-					known_actions.append((status2.points, act2))
-					if unknown_actions.count(act2):
-						unknown_actions.remove(act2)
+						print("%d leads to %d which is unkown" % (a2,id2))
 
-
-		if len(win)!=0:
-			best_action=random.choice(win)
-		else: 
-			known_actions=sorted(known_actions, reverse=True) # last item is the best 
-
-	# not good, i play always the same thing by picking the first
-# i should reduce known_actions to get only its best.
-			if verbose:
-				print("reducing known_actions to its best outcomes")
-				print(known_actions)
-			if len(known_actions)>0:
-				known_actions=[i for i in known_actions if i[0]==known_actions[0][0]] 
-				if verbose:
-					print(known_actions) 
-				best_action=random.choice(known_actions)
-				if best_action[0]<=0 and len(unknown_actions)!=0: # if the action we picked, that is the best, is still bad, then we check if there is an unknown action to try out
-					best_action=random.choice(unknown_actions)
-				else:
-					best_action=best_action[1]
-			else:
-				if len(unknown_actions) > 0:
-					best_action=random.choice(unknown_actions)
+# and we remove each item from the possible_actions list 
+		for a in acts:
+			possible_actions.remove(a) 
 
 		if verbose:
-			print(win)
-			print(known_actions)
-			print(unknown_actions)
-			print("I play %d" % best_action)
+			print("Bests actions are %s" % acts)
+		if len(acts)>0:
+			best_action=random.choice(acts)
+			if verbose:
+				print("Picked best action %d" % best_action)
+		else:
+			best_action=random.choice(possible_actions)
+			if verbose:
+				print("Picked random action %d" % best_action)
 
 		return best_action
 
@@ -114,24 +105,35 @@ class AI:
 			self.statuses[old_status]=Status()
 		self.statuses[old_status].add(action, new_status)
 
-	def learn_points(self, status, points):
+	def learn_path_opponent(self, old_status, action, new_status): #old_status and new_status are integers 
+		old_status=array_to_integer(old_status)
+		new_status=array_to_integer(new_status)
+		if self.statuses.get(old_status)==None:
+			self.statuses[old_status]=Status()
+		self.statuses[old_status].add_opponent(action, new_status)
+
+
+	def learn_points(self, status, points): # doesn't change if it's me or the opponent
 		status=array_to_integer(status)
 		if self.statuses.get(status)==None:
 			self.statuses[status]=Status()
 		self.statuses[status].points=points 
 
 	def calculate(self, id_):
-		a=self.statuses.get(id_)
-		if a is None:
-			a=Status()
-			self.statuses[id_]=a
-		p=[] 
-		for i in a.lt:
-			s=self.statuses.get(i)
-			if s!=None:
-				p.append(s.points)
-		if len(p)>0:
-			a.points=0.8*max(p)
+		s=self.statuses.get(id_)
+		if s is not None:
+			l=[]
+			for i in self.lt: # i need to take the max of it, so i'll update maxmin
+				s=self.statuses.get(i)
+				if s is not None:
+					l.append(s.minmax)
+			s.maxmin=max(l)
+			l=[]
+			for i in self.lto: # i need to take the max of it, so i'll update maxmin
+				s=self.statuses.get(i)
+				if s is not None:
+					l.append(s.maxmin)
+			s.minmax=min(l) 
 
 	def save(self):
 		pickle.dump(self.statuses, open('ttt.dat', 'wb'))

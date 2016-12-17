@@ -170,3 +170,13 @@ not good only one list, because when i learn, do i learn if i play, or if the ot
 
 i need pointsme and pointsyou. one is max, other is min. the rest is ok
 can't i have a ql that would store the outcome after we both play ? or after my turn ?
+
+
+minmax means we have to calculate from the end each time though. OR, i could apply that calculus each time
+like
+minmax(i)=maxmin(i+1)=minmax(i+2)
+maxmin(i)=minmax(i+1)=maxmin(i+2)
+
+i need 2 listes though, because it's min of opp_turns, not mine
+
+

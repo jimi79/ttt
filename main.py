@@ -111,23 +111,23 @@ def one_move(player, player2, board, board2, verbose=False):
 	new_board=board+board2
 	new_board2=board2+board
 	player.learn_path(old_board, move, new_board)
-	player.learn_path(old_board2, move, new_board2)
+	player.learn_path_opponent(old_board2, move, new_board2)
 	win=is_win(board+board2)	
 	tie=False
 	if not win:
 		tie=is_tie(board, board2)
 	if win:
-		player.learn_points(board+board2, 1000)
-		player.learn_points(board2+board, -1000)
+		player.learn_points(board+board2, 2)
+		player.learn_points(board2+board, -2)
 	if tie:
-		player.learn_points(board+board2, -100)
-		player.learn_points(board2+board, -100)
+		player.learn_points(board+board2, -1)
+		player.learn_points(board2+board, -1)
 	return win, tie, move
 
 # should i learn it it can loose ? yeah of course
 
-def one_game(history_printed=False, verbose=False): 
-	history=[]
+def one_game(history=False, verbose=False): 
+	history_moves=[]
 	history_points=[]
 	history_points_o=[]
 	board_a=copy.copy(zeros)
@@ -141,7 +141,7 @@ def one_game(history_printed=False, verbose=False):
 		h=[a+b*2 for a,b in zip(board_a, board_b)]
 		history_points.append(ttt.array_to_integer(board_a+board_b))
 		history_points_o.append(ttt.array_to_integer(board_b+board_a))
-		history.append(h)
+		history_moves.append(h)
 		if not win and not tie:
 			win, tie, move=one_move(alice, alice, board_b, board_a, verbose=verbose)
 			if win:
@@ -149,31 +149,41 @@ def one_game(history_printed=False, verbose=False):
 			h=[a+b*2 for a,b in zip(board_a, board_b)]
 			history_points.append(ttt.array_to_integer(board_a+board_b))
 			history_points_o.append(ttt.array_to_integer(board_b+board_a))
-			history.append(h)
+			history_moves.append(h)
 		end_of_game=win or tie
 
-	if history_printed:
-		print_history(history)
+	if history:
+		print_history(history_moves)
 		print_history_points(history_points)
 		print_history_points(history_points_o)
 	return winner
 
-def multiples_games(cpt, history_printed=False, verbose=False, display=100, reset=1000):
+def multiples_games(cpt, history=False, verbose=False, display=100, reset=1000):
 	a=0
-	print("%d %%" % a)
-	tot=reset
+	print("%d %%" % a, end="", flush=True)
+	totalice=0
+	totbob=0
+	tottie=0
+	tot=0
+	cdisplay=0
+	if display<reset:
+		reset=display
 	for i in range(cpt): 
+		if cdisplay==display:
+			print("\033[0Galice %.2f bob %.2f tie %.2f cpt %d" % (totalice/tot*100, totbob/tot*100, tottie/tot*100, tot))
+			cdisplay=0
 		if tot == reset:
 			totalice=0
 			totbob=0
 			tottie=0
 			tot=0
 		tot+=1
+		cdisplay+=1
 		b=int(i/cpt*100)
 		if b!=a:
-			print("%d %%" % b)
+			print("\033[0G%d %%" % b, end="", flush=True)
 			a=b
-		winner=one_game(history_printed=history_printed, verbose=verbose)
+		winner=one_game(history=history, verbose=verbose)
 		if winner=="alice":
 			totalice+=1
 		else:
@@ -181,8 +191,6 @@ def multiples_games(cpt, history_printed=False, verbose=False, display=100, rese
 				totbob+=1
 			else:
 				tottie+=1
-		if tot % display==0:
-			print("alice %.2f bob %.2f tie %.2f cpt %d" % (totalice/tot*100, totbob/tot*100, tottie/tot*100, tot))
 
 	alice.save()
 
