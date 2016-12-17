@@ -122,6 +122,8 @@ def one_move(player, player2, board, board2, verbose=False):
 	if tie:
 		player.learn_points(board+board2, -1)
 		player.learn_points(board2+board, -1)
+	if verbose:
+		print_game(board,board2)
 	return win, tie, move
 
 # should i learn it it can loose ? yeah of course
@@ -166,13 +168,14 @@ def multiples_games(cpt, history=False, verbose=False, display=100, reset=1000):
 	tottie=0
 	tot=0
 	cdisplay=0
-	if display<reset:
+	if display>reset:
 		reset=display
 	for i in range(cpt): 
 		if cdisplay==display:
 			print("\033[0Galice %.2f bob %.2f tie %.2f cpt %d" % (totalice/tot*100, totbob/tot*100, tottie/tot*100, tot))
 			cdisplay=0
 		if tot == reset:
+			print("\033[0Kreset")
 			totalice=0
 			totbob=0
 			tottie=0
@@ -190,8 +193,9 @@ def multiples_games(cpt, history=False, verbose=False, display=100, reset=1000):
 			if winner=="bob":
 				totbob+=1
 			else:
-				tottie+=1
-
+				tottie+=1 
+	print("\033[0K\033[0G100%")
 	alice.save()
+	print("saved")
 
 alice.try_load()
