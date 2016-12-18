@@ -29,6 +29,8 @@ class Status:
 		self.lto={}
 		self.minmax=0 # means i took the max of the next one, the min of the next one (unless i reached 1000 or course)
 		self.maxmin=0
+		self.minmax_action=-1 # means i took the max of the next one, the min of the next one (unless i reached 1000 or course)
+		self.maxmin_action=-1
 
 		self.name=None
 		self.verbose=False
