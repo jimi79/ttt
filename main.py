@@ -3,12 +3,13 @@
 import copy
 import importlib
 import numpy
+import pdb
 import random
 import ttt
 
 def init_ai(name): 
 	ai=ttt.AI()
-	ai.random=False
+	ai.random=True
 	ai.name=name 
 	ai.verbose=True
 	ai.filename="%s_ttt_ql.tmp" % name
@@ -260,9 +261,9 @@ def play_human_gui(verbose, start):
 	if not start:
 		win,tie,move=one_move(alice, board_b, board_a, verbose=verbose)
 
+	print("The board is : ")
+	print_board_array(board_a, board_b)
 	while in_progress:
-		print("The board is : ")
-		print_board_array(board_a, board_b)
 		available_actions=get_available_actions(list_or(board_a, board_b))
 		svailable_actions=','.join([str(a+1) for a in available_actions])
 		move=None
@@ -303,8 +304,8 @@ def play_human_gui(verbose, start):
 		alice.init_status(old_board, available_actions) 
 		alice.init_status(old_board_b, available_actions) 
 		if win:
-			alice.learn_points(board_a+board_b, -2)
-			alice.learn_points(board_b+board_a, 2)
+			alice.learn_points(board_a+board_b, 2)
+			alice.learn_points(board_b+board_a, -2)
 		if tie:
 			alice.learn_points(board_a+board_b, -1)
 			alice.learn_points(board_b+board_a, -1)

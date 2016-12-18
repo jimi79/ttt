@@ -55,84 +55,10 @@ class AI:
 		self.statuses={} # status
 		self.random=True
 
-	def play_integer(self, id_, possible_actions):
-# we generate a list of maxmin, based on possible outcomes
-		acts=[]
-		s=self.statuses.get(id_)
-		#max_=None # 0 points is not a goal to reach
-		txt=[]
-		if s is not None:
-			for a2,id2 in s.lt.items():
-				if id2 is not None:
-					s2=self.statuses.get(id2)
-					if s2 is not None: 
-						if self.verbose:
-							txt.append("%d+%d=%d(%0.2f)" % (id_,a2,id2,s2.minmax))
-						#if max_ is None:
-						#	max_=s2.minmax
-						#if s2.minmax>max_:
-						#	acts=[]
-						#	max_=s2.minmax
-						#if s2.minmax>=max_: # can only be = or < actually
-						acts.append((s2.maxmin,a2)) 
-					else:
-						if self.verbose:
-							txt.append("%d+%d=%d(?)" % (id_,a2,id2))
-				else:
-					if self.verbose:
-						txt.append("%d+%d=(?)" % (id_,a2))
-
-		if self.verbose:
-			print(",".join(txt))
-# and we remove each item from the possible_actions list 
-		for a in [b[1] for b in acts]:
-			possible_actions.remove(a) 
-
-		for a in possible_actions:
-			acts.append((0,a))
-
-		if self.verbose:
-			print("actions are : %s" % acts) 
-		acts=sorted(acts, reverse=True)
-		#acts=sorted(acts)
-		if self.verbose:
-			print("sorted actions are : %s" % acts) 
-
-		lose_act=[a for a in acts if a[0]==-2] # actions that will make the opponent lose
-		win_act=[a for a in acts if a[0]==2] # actions that will make me lose
-		positives_act=[a for a in acts if a[0]>0] # positives = the opponents is winning
-		negative_act=[a for a in acts if a[0]<0] # positives = the opponents is winning
-		nulle_act=[a for a in acts if a[0]==0] # positives = the opponents is winning
-		if self.verbose:
-			print("win actions are : %s" % win_act) 
-			print("positive actions are : %s" % positives_act) 
-			print("negative actions are : %s" % negative_act) 
-			print("null actions are : %s" % nulle_act) 
-
-
-		# what list do i pick
-		if len(win_act)>0:
-			acts2=win_act
-		else:
-			if len(positives_act)>0:
-				acts2=positives_act
-			else:
-				if len(nulle_act)>0:
-					acts2=nulle_act
-				else:
-					acts2=negative_act
-
-		if self.verbose:
-			print("I pick the list %s" % acts2) 
-
-		if self.random:
-			best_action=random.choice(acts2)[1] # cruche bordel
-		else:
-			best_action=acts2[0][1]
-		if self.verbose:
-			print("Picked best action %d" % best_action)
-
-		return best_action
+	def play_integer(self, id_, possible_actions): 
+		self.calculate(id_)
+		s=self.statuses[id_] 
+		return s.maxmin_action
 
 	def play(self, input_, possible_actions): 
 		id_=array_to_integer(input_) 
@@ -172,31 +98,37 @@ class AI:
 			self.statuses[status]=s
 		s.minmax=points
 		s.maxmin=points
+		s.minmax_action=None
+		s.maxmin_action=None
 
 	def calculate(self, id_):
 		s=self.statuses.get(id_)
 		if s is not None:
 			l=[]
-			for i in s.lt.keys(): # i need to take the max of it, so i'll update maxmin
-				i2=s.lt[i] 
-				# we got to invert it to find the next thing ?  
-				s2=self.statuses.get(i2)
+			for i in s.lto.items(): # i need to take the max of it, so i'll update maxmin
+				act=i[0]
+				s2=self.statuses.get(i[1])
 				if s2 is not None:
-					l.append(s2.maxmin)
-				else:
-					l.append(0)
+					l.append((s2.maxmin, act))
+				#else:
+				#	l.append((0, act)) # the min the other can do assume unknown stuff isn't worth checking
 			if len(l)>0:
-				s.minmax=min(l)*0.9
+				l=sorted(l)
+				s.minmax_action=l[0][1]
+				s.minmax=l[0][0]
+
 			l=[]
-			for i in s.lto.keys(): # i need to take the max of it, so i'll update maxmin
-				i2=s.lto[i] 
-				s2=self.statuses.get(i2)
+			for i in s.lt.items(): # i need to take the max of it, so i'll update maxmin
+				act=i[0]
+				s2=self.statuses.get(i[1])
 				if s2 is not None:
-					l.append(s2.minmax)
+					l.append((s2.minmax, act))
 				else:
-					l.append(0)
+					l.append((0, act))
 			if len(l)>0:
-				s.maxmin=max(l)*0.9 # doesn't change much, but with that i can now tell the numnber of steps b4 the actual win
+				l=sorted(l, reverse=True)
+				s.maxmin_action=l[0][1]
+				s.maxmin=l[0][0]
 
 	def save(self):
 		pickle.dump(self.statuses, open('ttt.dat', 'wb'))
@@ -212,8 +144,7 @@ class AI:
 			else:
 				s=self.statuses.get(id_)
 				if s is not None:
-					val=s.maxmin
-					print("%s\ %d->%d (max=%0.2f)" % (shift, action, id_, val))	
+					print("%s\ %d->%d (min=%0.2f, action=%s)" % (shift, action, id_, s.minmax, s.minmax_action))	
 					for i in sorted(s.lto.items(), reverse=True):
 						self.print_tree_maxmin(i[1], i[0], shift+'    ', level_down-1)
 
@@ -228,8 +159,7 @@ class AI:
 			else:
 				s=self.statuses.get(id_)
 				if s is not None:
-					val=s.minmax
-					print("%s\ %d->%d (min=%0.2f)" % (shift, action, id_, val))
+					print("%s\ %d->%d (max=%0.2f, action=%s)" % (shift, action, id_, s.maxmin, s.maxmin_action))
 					for i in sorted(s.lt.items()):
 						self.print_tree_minmax(i[1], i[0], shift+'    ', level_down-1)
 
