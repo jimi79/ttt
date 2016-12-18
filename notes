@@ -180,3 +180,11 @@ maxmin(i)=minmax(i+1)=maxmin(i+2)
 i need 2 listes though, because it's min of opp_turns, not mine
 
 
+
+
+
+jouer contre lui et voir ce qu'il fait ou s'il apprend
+
+maybe i should calculate the best thinkg to pick while calculating maxmim in calculate, along with the action that gives the best. so play just play the best outcome
+
+by assuming 0 for unknown stuff, i should be able to pick the bests without messing with multiples lists
