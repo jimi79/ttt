@@ -118,11 +118,13 @@ class AI:
 		old_status=array_to_integer(old_status)
 		new_status=array_to_integer(new_status)
 		self.statuses[old_status].lt[action]=new_status
+		self.calculate(old_status)
 
 	def learn_path_opponent(self, old_status, action, new_status): #old_status and new_status are integers 
 		old_status=array_to_integer(old_status)
 		new_status=array_to_integer(new_status)
 		self.statuses[old_status].lto[action]=new_status
+		self.calculate(old_status)
 
 	def learn_points(self, status, points): # doesn't change if it's me or the opponent
 		status=array_to_integer(status)
@@ -132,7 +134,6 @@ class AI:
 			self.statuses[status]=s
 		s.minmax=points
 		s.maxmin=points
-		self.calculate(status)
 
 	def calculate(self, id_):
 		s=self.statuses.get(id_)
@@ -146,8 +147,8 @@ class AI:
 			if len(l)>0:
 				s.maxmin=max(l)
 			l=[]
-			for i in s.lto: # i need to take the max of it, so i'll update maxmin
-				i2=s.lt[i] 
+			for i in s.lto.keys(): # i need to take the max of it, so i'll update maxmin
+				i2=s.lto[i] 
 				s2=self.statuses.get(i2)
 				if s2 is not None:
 					l.append(s2.maxmin)
