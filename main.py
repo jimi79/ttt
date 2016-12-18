@@ -119,7 +119,7 @@ def one_move(player, player2, board, board2, verbose=False):
 		tie=is_tie(board, board2)
 	if win:
 		player.learn_points(board+board2, 2)
-		player.learn_points(board2+board, 2)
+		player.learn_points(board2+board, -2)
 	if tie:
 		player.learn_points(board+board2, -1)
 		player.learn_points(board2+board, -1)
