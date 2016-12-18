@@ -140,6 +140,10 @@ class AI:
 			l=[]
 			for i in s.lt.keys(): # i need to take the max of it, so i'll update maxmin
 				i2=s.lt[i] 
+
+				# we got to invert it to find the next thing ?
+
+
 				s2=self.statuses.get(i2)
 				if s2 is not None:
 					l.append(s2.minmax)
