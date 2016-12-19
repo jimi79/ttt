@@ -27,11 +27,10 @@ class Status:
 	def __init__(self):
 		self.lt={}
 		self.lto={}
-		self.minmax=0 # means i took the max of the next one, the min of the next one (unless i reached 1000 or course)
+		self.minmax=None # means i took the max of the next one, the min of the next one (unless i reached 1000 or course)
+		self.minmax_action=None # means i took the max of the next one, the min of the next one (unless i reached 1000 or course)
 		self.maxmin=0
-		self.minmax_action=-1 # means i took the max of the next one, the min of the next one (unless i reached 1000 or course)
-		self.maxmin_action=-1
-
+		self.maxmin_action=None
 		self.name=None
 		self.verbose=False
 		self.filename=None # no idea how i will store these two arrays of objects
@@ -60,7 +59,8 @@ class AI:
 	def play_integer(self, id_, possible_actions): 
 		self.calculate(id_)
 		s=self.statuses[id_] 
-		return s.maxmin_action
+		action=s.maxmin_action
+		return action
 
 	def play(self, input_, possible_actions): 
 		id_=array_to_integer(input_) 
@@ -80,7 +80,7 @@ class AI:
 		old_status=array_to_integer(old_status)
 		new_status=array_to_integer(new_status)
 		self.statuses[old_status].lt[action]=new_status
-		self.calculate(old_status)
+		#self.calculate(old_status)
 		if self.verbose:
 			print("Learning from %d with %d leads to %d" % (old_status, action, new_status))
 
@@ -88,7 +88,7 @@ class AI:
 		old_status=array_to_integer(old_status)
 		new_status=array_to_integer(new_status)
 		self.statuses[old_status].lto[action]=new_status
-		self.calculate(old_status)
+		#self.calculate(old_status)
 		if self.verbose:
 			print("Learning for opponent, from %d with %d leads to %d" % (old_status, action, new_status))
 
@@ -109,11 +109,12 @@ class AI:
 			l=[]
 			for i in s.lto.items(): # i need to take the max of it, so i'll update maxmin
 				act=i[0]
+				self.calculate(i[1]) # test
 				s2=self.statuses.get(i[1])
 				if s2 is not None:
 					l.append((s2.maxmin, act))
-				#else:
-				#	l.append((0, act)) # the min the other can do assume unknown stuff isn't worth checking
+				else:
+					l.append((0, act))
 			if len(l)>0:
 				l=sorted(l)
 				s.minmax_action=l[0][1]
@@ -122,6 +123,7 @@ class AI:
 			l=[]
 			for i in s.lt.items(): # i need to take the max of it, so i'll update maxmin
 				act=i[0]
+				self.calculate(i[1]) # test
 				s2=self.statuses.get(i[1])
 				if s2 is not None:
 					l.append((s2.minmax, act))
@@ -163,9 +165,7 @@ class AI:
 				if s is not None:
 					print("%s\ %d->%d (max=%0.2f, action=%s)" % (shift, action, id_, s.maxmin, s.maxmin_action))
 					for i in sorted(s.lt.items()):
-						self.print_tree_minmax(i[1], i[0], shift+'    ', level_down-1)
-
-
+						self.print_tree_minmax(i[1], i[0], shift+'    ', level_down-1) 
 
 
 	def try_load(self):

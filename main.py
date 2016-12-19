@@ -133,6 +133,7 @@ def one_move(player, board, board2):
 def one_game(history=False, verbose=False): 
 	alice.verbose=verbose
 	history_moves=[]
+	history_boards=[]
 	history_points=[]
 	history_points_o=[]
 	board_a=copy.copy(zeros)
@@ -144,39 +145,44 @@ def one_game(history=False, verbose=False):
 			print_board_array(board_a, board_b)
 			print("alice plays")
 		win, tie, move=one_move(alice, board_a, board_b)
+		history_moves.append(move)
 		if win:
 			winner="alice"
 		h=[a+b*2 for a,b in zip(board_a, board_b)]
 		history_points.append(ttt.array_to_integer(board_a+board_b))
 		history_points_o.append(ttt.array_to_integer(board_b+board_a))
-		history_moves.append(h)
+		history_boards.append(h)
 		if not win and not tie:
 			if verbose:
 				print_board_array(board_a, board_b)
 				print("bob plays")
 			win, tie, move=one_move(alice, board_b, board_a)
+			history_moves.append(move)
 			if win:
 				winner="bob"
 			h=[a+b*2 for a,b in zip(board_a, board_b)]
 			history_points.append(ttt.array_to_integer(board_a+board_b))
 			history_points_o.append(ttt.array_to_integer(board_b+board_a))
-			history_moves.append(h)
+			history_boards.append(h)
 		end_of_game=win or tie
 
 	if history:
-		print_history(history_moves)
+		print_history(history_boards)
 		print_history_points(history_points)
 		print_history_points(history_points_o)
-	return winner
+	return winner, history_moves
 
-def multiples_games(cpt, history=False, verbose=False, display=1000, reset=None):
+def multiples_games(cpt, history=False, verbose=False, display=1000, reset=None, log='ttt.log'):
 	a=0
 	print("%d %%" % a, end="", flush=True)
 	totalice=0
 	totbob=0
 	tottie=0
 	tot=0
+	same_in_a_row=0
 	cdisplay=0
+	log=open(log, "w")
+	history_actions=None
 	if reset is not None:
 		if display>reset:
 			reset=display
@@ -198,7 +204,16 @@ def multiples_games(cpt, history=False, verbose=False, display=1000, reset=None)
 		if b!=a:
 			print("\033[0G%d %%" % b, end="", flush=True)
 			a=b
-		winner=one_game(history=history, verbose=verbose)
+		old_history_actions=history_actions
+		winner, history_actions=one_game(history=history, verbose=verbose)
+		if history_actions==old_history_actions:
+			same_in_a_row+=1
+			if same_in_a_row>=10:
+				print("I am playing the same game ten times, i abandon")
+				break
+		else:
+			same_in_a_row=0
+		log.write('%s\n' % (','. join([str(a) for a in history_actions])))
 		if winner=="alice":
 			totalice+=1
 		else:
@@ -207,6 +222,7 @@ def multiples_games(cpt, history=False, verbose=False, display=1000, reset=None)
 			else:
 				tottie+=1 
 	print("\033[0K\033[0G100%")
+	log.close()
 	alice.save()
 	print("saved")
 
@@ -248,11 +264,12 @@ def play_human_gui(verbose, start):
 
 	print("To play, enter the cellule index like shown here, then enter")
 	print("")
-	print("%s│%s│%s" % (7,8,9)) 
-	print("─┼─┼─")
-	print("%s│%s│%s" % (4,5,6))
-	print("─┼─┼─")
-	print("%s│%s│%s" % (1,2,3))
+	print("%s│%s│%s              %s│%s│%s" % (7,8,9,'e', 'r', 't')) 
+	print("─┼─┼─    or you    ─┼─┼─")
+	print("%s│%s│%s  can enter   %s│%s│%s" % (4,5,6, 'd', 'f', 'g'))
+	print("─┼─┼─    a letter   ┼─┼─")
+	print("%s│%s│%s              %s│%s│%s" % (1,2,3, 'c', 'v', 'b'))
+	letters='e', 'r', 't', 'd', 'f', 'g', 'c', 'v', 'b'
 
 	in_progress=True
 	board_a=copy.copy(zeros)
@@ -268,19 +285,22 @@ def play_human_gui(verbose, start):
 		svailable_actions=','.join([str(a+1) for a in available_actions])
 		move=None
 		while move is None: 
-			smove=input("your turn, what do you do ? You can do %s. " % svailable_actions)
+			smove=input("your turn, what do you do ? You can play in cells %s. " % svailable_actions)
 			if len(smove)>0: 
-				imove=int(smove)
-				if imove in [7,8,9]:
-					imove-=6
-				else:
-					if imove in [1,2,3]:
-						imove+=6
-				imove-=1
-				if available_actions.count(imove)==0:
-					print("I'm afraid that is not possible")
-				else:
-					move=imove
+				if smove in letters:
+					imove=letters.index(smove)
+				else: 
+					imove=int(smove)
+					if imove in [7,8,9]:
+						imove-=6
+					else:
+						if imove in [1,2,3]:
+							imove+=6
+					imove-=1
+			if available_actions.count(imove)==0:
+				print("I'm afraid that is not possible")
+			else:
+				move=imove
 		old_board=board_a+board_b
 		old_board_b=board_b+board_a
 		board_a[move]=1
@@ -309,8 +329,8 @@ def play_human_gui(verbose, start):
 		if tie:
 			alice.learn_points(board_a+board_b, -1)
 			alice.learn_points(board_b+board_a, -1)
-		alice.learn_path_opponent(old_board_b, move, new_board_b)
 		alice.learn_path(old_board, move, new_board) 
+		alice.learn_path_opponent(old_board_b, move, new_board_b)
 
 		if in_progress:
 			win, tie, move=one_move(alice, board_b, board_a)

@@ -188,3 +188,10 @@ jouer contre lui et voir ce qu'il fait ou s'il apprend
 maybe i should calculate the best thinkg to pick while calculating maxmim in calculate, along with the action that gives the best. so play just play the best outcome
 
 by assuming 0 for unknown stuff, i should be able to pick the bests without messing with multiples lists
+
+why 5,4,1,8 isn't tested ? it's a win
+
+Change code so that we can either prefer to try unknown stuff or not. i need an unknown list for each status, in which i will pick, either if the score is actually unknown or <0, either if there are some options left
+
+
+172192 leaded to different pathes
