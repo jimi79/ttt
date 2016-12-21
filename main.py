@@ -112,6 +112,7 @@ def one_move(player, board, board2):
 	#print(ttt.array_to_integer(old_board))
 	move=player.play(board + board2, available_actions) # those are lists 
 	board[move]=1
+	player.init_status(board+board2, available_actions) # we got 3 things to learn here ?
 	new_board=board+board2
 	new_board2=board2+board
 	win=is_win(board+board2)	
@@ -165,6 +166,8 @@ def one_game(history=False, verbose=False):
 			history_points_o.append(ttt.array_to_integer(board_b+board_a))
 			history_boards.append(h)
 		end_of_game=win or tie
+		if verbose:
+			print_board_array(board_a, board_b)
 
 	if history:
 		print_history(history_boards)
@@ -208,8 +211,8 @@ def multiples_games(cpt, history=False, verbose=False, display=1000, reset=None,
 		winner, history_actions=one_game(history=history, verbose=verbose)
 		if history_actions==old_history_actions:
 			same_in_a_row+=1
-			if same_in_a_row>=10:
-				print("I am playing the same game ten times, i abandon")
+			if same_in_a_row>=100:
+				print("I am playing the same game hundred times, i abandon")
 				break
 		else:
 			same_in_a_row=0

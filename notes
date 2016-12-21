@@ -195,3 +195,6 @@ Change code so that we can either prefer to try unknown stuff or not. i need an 
 
 
 172192 leaded to different pathes
+
+Actually, some paths aren't worth checking, because the max is totally satisfaying. as well as the min the other way
+and, on top of that, 131072.minmax is empty, i don't get why

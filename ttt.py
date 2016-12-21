@@ -29,12 +29,15 @@ class Status:
 		self.lto={}
 		self.minmax=None # means i took the max of the next one, the min of the next one (unless i reached 1000 or course)
 		self.minmax_action=None # means i took the max of the next one, the min of the next one (unless i reached 1000 or course)
-		self.maxmin=0
+		self.maxmin=None
 		self.maxmin_action=None
 		self.name=None
 		self.verbose=False
 		self.filename=None # no idea how i will store these two arrays of objects
 		self.logfilename=None
+		self.changed=True
+		self.parentlt=None
+		self.parentlto=None
 
 	def add(self, action, status):
 		l=self.lt
@@ -76,21 +79,38 @@ class AI:
 				s.lt[i]=None
 				s.lto[i]=None
 
-	def learn_path(self, old_status, action, new_status): #old_status and new_status are integers 
+	def learn_path(self, old_status, action, new_status): 
 		old_status=array_to_integer(old_status)
 		new_status=array_to_integer(new_status)
-		self.statuses[old_status].lt[action]=new_status
-		#self.calculate(old_status)
-		if self.verbose:
-			print("Learning from %d with %d leads to %d" % (old_status, action, new_status))
+		if self.statuses[old_status].lt[action]!=new_status:
+			self.statuses[old_status].lt[action]=new_status
+			#self.calculate(old_status)
+			self.statuses[old_status].changed=True
+			s=self.statuses.get(new_status)
+			if s is not None:
+				s.parentlt=old_status
+			if self.verbose:
+				print("Learning from %d with %d leads to %d" % (old_status, action, new_status))
 
 	def learn_path_opponent(self, old_status, action, new_status): #old_status and new_status are integers 
 		old_status=array_to_integer(old_status)
 		new_status=array_to_integer(new_status)
-		self.statuses[old_status].lto[action]=new_status
-		#self.calculate(old_status)
-		if self.verbose:
-			print("Learning for opponent, from %d with %d leads to %d" % (old_status, action, new_status))
+		if self.statuses[old_status].lto[action]!=new_status:
+			self.statuses[old_status].lto[action]=new_status
+			s=self.statuses.get(new_status)
+			if s is not None:
+				s.parentlto=old_status
+			self.statuses[old_status].changed=True
+			if self.verbose:
+				print("Learning for opponent, from %d with %d leads to %d" % (old_status, action, new_status)) 
+
+
+#first, think about it : what kind of movement will never happens ?
+
+#the one i'm playing, that can always happen to the opponent, because if i start first it may start 2nd, and vice versa
+# the one the other is playing, i am interested too.
+# now that wasn't the question.
+# the minmax, i care only if it's a first move, not a second 
 
 	def learn_points(self, status, points): # doesn't change if it's me or the opponent
 		status=array_to_integer(status)
@@ -98,74 +118,104 @@ class AI:
 		if s is None:
 			s=Status()
 			self.statuses[status]=s
-		s.minmax=points
-		s.maxmin=points
-		s.minmax_action=None
-		s.maxmin_action=None
+		if s.minmax!=points or s.maxmin!=points:
+			s.minmax=points
+			s.maxmin=points
+			s.minmax_action=None
+			s.maxmin_action=None
+
+			cont=True
+			while cont: 
+				if s.parentlt is not None:
+					s=self.statuses.get(s.parentlt)
+					if s is not None:
+						s.changed=True
+					else:
+						cont=False
+				else:
+					cont=False
+
+			cont=True
+			while cont: 
+				if s.parentlto is not None:
+					s=self.statuses.get(s.parentlto)
+					if s is not None:
+						s.changed=True
+					else:
+						cont=False
+				else:
+					cont=False
 
 	def calculate(self, id_):
-		s=self.statuses.get(id_)
-		if s is not None:
-			l=[]
-			for i in s.lto.items(): # i need to take the max of it, so i'll update maxmin
-				act=i[0]
-				self.calculate(i[1]) # test
-				s2=self.statuses.get(i[1])
-				if s2 is not None:
-					l.append((s2.maxmin, act))
-				else:
-					l.append((0, act))
-			if len(l)>0:
-				l=sorted(l)
-				s.minmax_action=l[0][1]
-				s.minmax=l[0][0]
+		if id_ is not None:
+			s=self.statuses.get(id_)
+			if s is not None:
+				if s.changed: # actually, if any child changed, u have to recalculate 
+					if self.verbose:
+						print("Calculating %d" % id_)
+					l=[]
+					for i in s.lto.items(): # i need to take the max of it, so i'll update maxmin
+						act=i[0]
+						self.calculate(i[1]) # test
+						s2=self.statuses.get(i[1])
+						if s2 is not None:
+							l.append((s2.maxmin, act))
+						else:
+							l.append((0, act))
+					if len(l)>0:
+						l=sorted(l)
+						s.minmax_action=l[0][1]
+						s.minmax=l[0][0]
 
-			l=[]
-			for i in s.lt.items(): # i need to take the max of it, so i'll update maxmin
-				act=i[0]
-				self.calculate(i[1]) # test
-				s2=self.statuses.get(i[1])
-				if s2 is not None:
-					l.append((s2.minmax, act))
-				else:
-					l.append((0, act))
-			if len(l)>0:
-				l=sorted(l, reverse=True)
-				s.maxmin_action=l[0][1]
-				s.maxmin=l[0][0]
+					l=[]
+					for i in s.lt.items(): # i need to take the max of it, so i'll update maxmin
+						act=i[0]
+						self.calculate(i[1]) # test
+						s2=self.statuses.get(i[1])
+						if s2 is not None:
+							l.append((s2.minmax, act))
+						else:
+							l.append((0, act))
+					if len(l)>0:
+						l=sorted(l, reverse=True)
+						s.maxmin_action=l[0][1]
+						s.maxmin=l[0][0]
+					s.changed=False
 
 	def save(self):
 		pickle.dump(self.statuses, open('ttt.dat', 'wb'))
 
 	def print_tree_minmax(self, id_, action=-1, shift='', level_down=4): 
-		if level_down==0:
-			print("%s\..." % shift)
+		if len(shift)>60:
+			raise Exception("infinite loop")
+		if id_ is None:
+			print("%s\\ %d->??" % (shift, action))
 		else:
-			if len(shift)>60:
-				raise Exception("infinite loop")
-			if id_ is None:
-				print("%s\ %d->??" % (shift, action))
-			else:
-				s=self.statuses.get(id_)
-				if s is not None:
-					print("%s\ %d->%d (min=%0.2f, action=%s)" % (shift, action, id_, s.minmax, s.minmax_action))	
+			s=self.statuses.get(id_)
+			if s is not None:
+				print("%s\ %d->%d (min=%s, action=%s)" % (shift, action, id_, s.minmax, s.minmax_action))	
+				level_down-=1
+				if level_down==0:
+					print("%s    \\..." % shift)
+				else:
 					for i in sorted(s.lto.items(), reverse=True):
-						self.print_tree_maxmin(i[1], i[0], shift+'    ', level_down-1)
+						self.print_tree_maxmin(i[1], i[0], shift+'    ', level_down)
 
 	def print_tree_maxmin(self, id_, action=-1, shift='', level_down=4): 
-		if level_down==0:
-			print("%s\..." % shift)
+		if len(shift)>60:
+			raise Exception("infinite loop")
+		if id_ is None:
+			print("%s\ %d->??" % (shift, action))
 		else:
-			if len(shift)>60:
-				raise Exception("infinite loop")
-			if id_ is None:
-				print("%s\ %d->??" % (shift, action))
-			else:
-				s=self.statuses.get(id_)
-				if s is not None:
-					print("%s\ %d->%d (max=%0.2f, action=%s)" % (shift, action, id_, s.maxmin, s.maxmin_action))
+			s=self.statuses.get(id_)
+			if s is not None:
+				print("%s\ %d->%d (max=%s, action=%s)" % (shift, action, id_, s.maxmin, s.maxmin_action))
+				level_down-=1
+				if level_down==0:
+					print("%s    \\..." % shift)
+				else:
 					for i in sorted(s.lt.items()):
-						self.print_tree_minmax(i[1], i[0], shift+'    ', level_down-1) 
+						self.print_tree_minmax(i[1], i[0], shift+'    ', level_down) 
 
 
 	def try_load(self):
