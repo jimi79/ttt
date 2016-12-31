@@ -35,6 +35,7 @@ class Status:
 		self.verbose=False
 		self.filename=None # no idea how i will store these two arrays of objects
 		self.logfilename=None
+		self.parents=[] # it has a list of parents, and each time it changes, we then recalculate all parents.
 
 	def add(self, action, status):
 		l=self.lt
@@ -80,7 +81,7 @@ class AI:
 		old_status=array_to_integer(old_status)
 		new_status=array_to_integer(new_status)
 		self.statuses[old_status].lt[action]=new_status
-		#self.calculate(old_status)
+		self.parents.append(old_status)
 		if self.verbose:
 			print("Learning from %d with %d leads to %d" % (old_status, action, new_status))
 
@@ -88,7 +89,7 @@ class AI:
 		old_status=array_to_integer(old_status)
 		new_status=array_to_integer(new_status)
 		self.statuses[old_status].lto[action]=new_status
-		#self.calculate(old_status)
+		self.parents.append(old_status)
 		if self.verbose:
 			print("Learning for opponent, from %d with %d leads to %d" % (old_status, action, new_status))
 
@@ -100,16 +101,20 @@ class AI:
 			self.statuses[status]=s
 		s.minmax=points
 		s.maxmin=points
-		s.minmax_action=None
+		s.minmax_action=None 
 		s.maxmin_action=None
+		self.calculate(status)
+		for i in self.parents:
+			self.calculate(i)
 
 	def calculate(self, id_):
 		s=self.statuses.get(id_)
 		if s is not None:
+			if self.verbose:
+				print("Calculate %d" % id_)
 			l=[]
 			for i in s.lto.items(): # i need to take the max of it, so i'll update maxmin
 				act=i[0]
-				self.calculate(i[1]) # test
 				s2=self.statuses.get(i[1])
 				if s2 is not None:
 					l.append((s2.maxmin, act))
@@ -118,12 +123,10 @@ class AI:
 			if len(l)>0:
 				l=sorted(l)
 				s.minmax_action=l[0][1]
-				s.minmax=l[0][0]
-
+				s.minmax=l[0][0] 
 			l=[]
 			for i in s.lt.items(): # i need to take the max of it, so i'll update maxmin
 				act=i[0]
-				self.calculate(i[1]) # test
 				s2=self.statuses.get(i[1])
 				if s2 is not None:
 					l.append((s2.minmax, act))
