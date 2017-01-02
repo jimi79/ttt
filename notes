@@ -195,3 +195,19 @@ Change code so that we can either prefer to try unknown stuff or not. i need an 
 
 
 172192 leaded to different pathes
+
+Actually, some paths aren't worth checking, because the max is totally satisfaying. as well as the min the other way
+and, on top of that, 131072.minmax is empty, i don't get why
+
+
+------
+
+i need a way of having it playing all possible games
+
+like a loop, i don't know.
+
+and then i will have it learning each points for each outcome
+
+and then i calculate, and then it will know min and max
+
+i need all perms of the list [0,1,2,3,4,5,6,7,8] and play each game

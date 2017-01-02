@@ -2,9 +2,12 @@
 
 import copy
 import importlib
+import itertools
+import math
 import numpy
 import pdb
 import random
+import sys
 import ttt
 
 def init_ai(name): 
@@ -105,15 +108,17 @@ def test_play(int_):
 
 def one_move(player, board, board2):
 	old_board=board+board2
-	old_board2=board2+board
+	old_board_b=board2+board
 	available_actions=get_available_actions(list_or(board, board2))
-	player.init_status(board+board2, available_actions) 
-	player.init_status(board2+board, available_actions) 
+
+	player.init_status(list(board+board2), available_actions) 
+	player.init_status(list(board2+board), available_actions) 
+
 	#print(ttt.array_to_integer(old_board))
-	move=player.play(board + board2, available_actions) # those are lists 
+	move, play_random=player.play(board + board2, available_actions) # those are lists 
 	board[move]=1
 	new_board=board+board2
-	new_board2=board2+board
+	new_board_b=board2+board
 	win=is_win(board+board2)	
 	tie=False
 	if not win:
@@ -125,13 +130,15 @@ def one_move(player, board, board2):
 		player.learn_points(board+board2, -1)
 		player.learn_points(board2+board, -1)
 	player.learn_path(old_board, move, new_board)
-	player.learn_path_opponent(old_board2, move, new_board2)
-	return win, tie, move
+	player.learn_path_opponent(old_board_b, move, new_board_b)
+	return win, tie, move, play_random
 
 # should i learn it it can loose ? yeah of course
 
 def one_game(history=False, verbose=False): 
 	alice.verbose=verbose
+	play_random_once=False
+	#alice.calculate(0) # ok, so here we calculate everythg
 	history_moves=[]
 	history_boards=[]
 	history_points=[]
@@ -144,7 +151,8 @@ def one_game(history=False, verbose=False):
 		if verbose:
 			print_board_array(board_a, board_b)
 			print("alice plays")
-		win, tie, move=one_move(alice, board_a, board_b)
+		win, tie, move, play_random=one_move(alice, board_a, board_b)
+		play_random_once=play_random_once or play_random
 		history_moves.append(move)
 		if win:
 			winner="alice"
@@ -156,7 +164,8 @@ def one_game(history=False, verbose=False):
 			if verbose:
 				print_board_array(board_a, board_b)
 				print("bob plays")
-			win, tie, move=one_move(alice, board_b, board_a)
+			win, tie, move, play_random=one_move(alice, board_b, board_a)
+			play_random_once=play_random_once or play_random
 			history_moves.append(move)
 			if win:
 				winner="bob"
@@ -170,7 +179,8 @@ def one_game(history=False, verbose=False):
 		print_history(history_boards)
 		print_history_points(history_points)
 		print_history_points(history_points_o)
-	return winner, history_moves
+
+	return winner, history_moves, play_random_once
 
 def multiples_games(cpt, history=False, verbose=False, display=1000, reset=None, log='ttt.log'):
 	a=0
@@ -179,7 +189,6 @@ def multiples_games(cpt, history=False, verbose=False, display=1000, reset=None,
 	totbob=0
 	tottie=0
 	tot=0
-	same_in_a_row=0
 	cdisplay=0
 	log=open(log, "w")
 	history_actions=None
@@ -205,14 +214,7 @@ def multiples_games(cpt, history=False, verbose=False, display=1000, reset=None,
 			print("\033[0G%d %%" % b, end="", flush=True)
 			a=b
 		old_history_actions=history_actions
-		winner, history_actions=one_game(history=history, verbose=verbose)
-		if history_actions==old_history_actions:
-			same_in_a_row+=1
-			if same_in_a_row>=10:
-				print("I am playing the same game ten times, i abandon")
-				break
-		else:
-			same_in_a_row=0
+		winner, history_actions, play_random_once=one_game(history=history, verbose=verbose) 
 		log.write('%s\n' % (','. join([str(a) for a in history_actions])))
 		if winner=="alice":
 			totalice+=1
@@ -221,7 +223,12 @@ def multiples_games(cpt, history=False, verbose=False, display=1000, reset=None,
 				totbob+=1
 			else:
 				tottie+=1 
+		if not play_random_once:
+			break
 	print("\033[0K\033[0G100%")
+	if not play_random_once:
+		print("Never played random, will now calculate")
+		alice.calculate(0)
 	log.close()
 	alice.save()
 	print("saved")
@@ -255,7 +262,7 @@ def input_yes_no(s):
 			print("I don't understand, please try again") 
 	return value
 
-def play_human_gui(verbose, start):
+def play_human_gui(verbose=None, start=None):
 	# first we ask if they want some verbosity
 	if verbose is None:
 		verbose=input_yes_no('do you want some verbosity about what is going on behind the scene ? (y/n)')
@@ -275,8 +282,10 @@ def play_human_gui(verbose, start):
 	board_a=copy.copy(zeros)
 	board_b=copy.copy(zeros) 
 
+	alice.verbose=verbose
+
 	if not start:
-		win,tie,move=one_move(alice, board_b, board_a, verbose=verbose)
+		win,tie,move=one_move(alice, board_b, board_a)
 
 	print("The board is : ")
 	print_board_array(board_a, board_b)
@@ -301,13 +310,14 @@ def play_human_gui(verbose, start):
 				print("I'm afraid that is not possible")
 			else:
 				move=imove
-		old_board=board_a+board_b
-		old_board_b=board_b+board_a
+		old_board=copy.copy(board_a+board_b)
+		old_board_b=copy.copy(board_b+board_a)
 		board_a[move]=1
 		new_board=board_a+board_b
 		new_board_b=board_b+board_a
 		print("After you play, the board is")
 		print_board_array(board_a, board_b)
+		print("%d - %d" % (ttt.array_to_integer(board_a + board_b), ttt.array_to_integer(board_b + board_a)))
 
 		win=False
 		tie=False
@@ -333,10 +343,13 @@ def play_human_gui(verbose, start):
 		alice.learn_path_opponent(old_board_b, move, new_board_b)
 
 		if in_progress:
-			win, tie, move=one_move(alice, board_b, board_a)
+			win, tie, move, play_random=one_move(alice, board_b, board_a)
+			if play_random:
+				print("note : i picked at random")
 			print("I play in the cell %d" % (move+1))
 			print("The board is now") 
 			print_board_array(board_a, board_b)
+			print("%d - %d" % (ttt.array_to_integer(board_a + board_b), ttt.array_to_integer(board_b + board_a)))
 			if win:
 				print("I win")
 				in_progress=False
@@ -345,7 +358,104 @@ def play_human_gui(verbose, start):
 		#			print("I tie")
 					in_progress=False 
 
-	alice.save() # in case i learned somethg
+	#alice.save() # in case i learned somethg # no save
+
+
+def g(): 
+	play_human_gui(verbose=True, start=True)
+
+
+def play_all_games(maxcpt=None, verbose=False):
+	a=[0,1,2,3,4,5,6,7,8]
+
+	allgames=itertools.permutations(a)
+	alice.verbose=verbose
+	cpt=0
+	a=-1
+	totcpt=math.factorial(9)
+	for game in allgames: 
+		if maxcpt is not None:
+			if cpt>maxcpt:
+				break
+
+		cpt+=1
+
+		b=int(cpt/totcpt*100)
+		if b!=a:
+			print("\033[0G%d %%" % b, end="", flush=True)
+			a=b
+	
+		board=copy.copy(zeros)
+		board2=copy.copy(zeros) 
+		history=[]
+		for move in game: 
+			available_actions=get_available_actions(list_or(board, board2)) 
+			old_board=board+board2
+			old_board2=board2+board
+			alice.init_status(old_board, available_actions) 
+			alice.init_status(old_board2, available_actions) 
+			board[move]=1
+			new_board=board+board2
+			new_board2=board2+board
+			h=[a+b*2 for a,b in zip(board, board2)]
+			history.append(h)
+			alice.learn_path(old_board, move, new_board)
+			alice.learn_path_opponent(old_board2, move, new_board2)
+			win=is_win(new_board)
+			if not win:
+				tie=is_tie(board, board2)
+			else:
+				tie=False
+
+			if (tie) or (win):
+				if win:
+					alice.learn_points(new_board, 2)
+					alice.learn_points(new_board2, -2)
+				if tie:
+					alice.learn_points(new_board, -1)
+					alice.learn_points(new_board2, -1)
+				break
+			else:
+				a=board2
+				board2=board
+				board=a
+
+		if verbose:
+			print_history(history)
+
+
+
+			
+	print("")
+
+		
+
+
+
+
+
+
+
+
 
 if alice.try_load():
 	print("loaded")
+
+if len(sys.argv)>1:
+	if sys.argv[1]=='run':
+		multiples_games(100000, verbose=True)
+	if sys.argv[1]=='tree':
+		alice.print_tree_maxmin(0, level_down=99)
+	if sys.argv[1]=='play':
+		sys.argv.remove('play')
+		if sys.argv.count('start')==1:
+			start=True
+		if sys.argv.count('nostart')==1:
+			start=False
+		if sys.argv.count('verbose')==1:
+			verb=True
+		if sys.argv.count('noverbose')==1:
+			verb=False
+
+		main.play_human_gui(verb, start)
+
