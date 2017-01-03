@@ -9,6 +9,7 @@ import pdb
 import random
 import sys
 import ttt
+import pydoc
 
 def init_ai(name): 
 	ai=ttt.AI()
@@ -115,7 +116,7 @@ def one_move(player, board, board2):
 	player.init_status(list(board2+board), available_actions) 
 
 	#print(ttt.array_to_integer(old_board))
-	move, play_random=player.play(board + board2, available_actions) # those are lists 
+	move=player.play(board + board2, available_actions) # those are lists 
 	board[move]=1
 	new_board=board+board2
 	new_board_b=board2+board
@@ -131,13 +132,12 @@ def one_move(player, board, board2):
 		player.learn_points(board2+board, -1)
 	player.learn_path(old_board, move, new_board)
 	player.learn_path_opponent(old_board_b, move, new_board_b)
-	return win, tie, move, play_random
+	return win, tie, move
 
 # should i learn it it can loose ? yeah of course
 
 def one_game(history=False, verbose=False): 
 	alice.verbose=verbose
-	play_random_once=False
 	#alice.calculate(0) # ok, so here we calculate everythg
 	history_moves=[]
 	history_boards=[]
@@ -151,8 +151,7 @@ def one_game(history=False, verbose=False):
 		if verbose:
 			print_board_array(board_a, board_b)
 			print("alice plays")
-		win, tie, move, play_random=one_move(alice, board_a, board_b)
-		play_random_once=play_random_once or play_random
+		win, tie, move=one_move(alice, board_a, board_b)
 		history_moves.append(move)
 		if win:
 			winner="alice"
@@ -164,8 +163,7 @@ def one_game(history=False, verbose=False):
 			if verbose:
 				print_board_array(board_a, board_b)
 				print("bob plays")
-			win, tie, move, play_random=one_move(alice, board_b, board_a)
-			play_random_once=play_random_once or play_random
+			win, tie, move=one_move(alice, board_b, board_a)
 			history_moves.append(move)
 			if win:
 				winner="bob"
@@ -180,58 +178,7 @@ def one_game(history=False, verbose=False):
 		print_history_points(history_points)
 		print_history_points(history_points_o)
 
-	return winner, history_moves, play_random_once
-
-def multiples_games(cpt, history=False, verbose=False, display=1000, reset=None, log='ttt.log'):
-	a=0
-	print("%d %%" % a, end="", flush=True)
-	totalice=0
-	totbob=0
-	tottie=0
-	tot=0
-	cdisplay=0
-	log=open(log, "w")
-	history_actions=None
-	if reset is not None:
-		if display>reset:
-			reset=display
-	for i in range(cpt): 
-		if display is not None:
-			if cdisplay==display:
-				print("\033[0Galice %.2f bob %.2f tie %.2f cpt %d" % (totalice/tot*100, totbob/tot*100, tottie/tot*100, tot))
-				cdisplay=0
-			if reset is not None:
-				if tot == reset:
-					print("\033[0Kreset")
-					totalice=0
-					totbob=0
-					tottie=0
-					tot=0
-			tot+=1
-			cdisplay+=1
-		b=int(i/cpt*100)
-		if b!=a:
-			print("\033[0G%d %%" % b, end="", flush=True)
-			a=b
-		old_history_actions=history_actions
-		winner, history_actions, play_random_once=one_game(history=history, verbose=verbose) 
-		log.write('%s\n' % (','. join([str(a) for a in history_actions])))
-		if winner=="alice":
-			totalice+=1
-		else:
-			if winner=="bob":
-				totbob+=1
-			else:
-				tottie+=1 
-		if not play_random_once:
-			break
-	print("\033[0K\033[0G100%")
-	if not play_random_once:
-		print("Never played random, will now calculate")
-		alice.calculate(0)
-	log.close()
-	alice.save()
-	print("saved")
+	return winner, history_moves
 
 def play_human(act, id_=0, verbose=False): # the human start
 	if not win:
@@ -263,7 +210,6 @@ def input_yes_no(s):
 	return value
 
 def play_human_gui(verbose=None, start=None):
-	# first we ask if they want some verbosity
 	if verbose is None:
 		verbose=input_yes_no('do you want some verbosity about what is going on behind the scene ? (y/n)')
 	if start is None:
@@ -276,17 +222,13 @@ def play_human_gui(verbose=None, start=None):
 	print("%s│%s│%s  can enter   %s│%s│%s" % (4,5,6, 'd', 'f', 'g'))
 	print("─┼─┼─    a letter   ┼─┼─")
 	print("%s│%s│%s              %s│%s│%s" % (1,2,3, 'c', 'v', 'b'))
-	letters='e', 'r', 't', 'd', 'f', 'g', 'c', 'v', 'b'
-
+	letters='e', 'r', 't', 'd', 'f', 'g', 'c', 'v', 'b' 
 	in_progress=True
 	board_a=copy.copy(zeros)
 	board_b=copy.copy(zeros) 
-
-	alice.verbose=verbose
-
+	alice.verbose=verbose 
 	if not start:
-		win,tie,move=one_move(alice, board_b, board_a)
-
+		win,tie,move=one_move(alice, board_b, board_a) 
 	print("The board is : ")
 	print_board_array(board_a, board_b)
 	while in_progress:
@@ -294,7 +236,7 @@ def play_human_gui(verbose=None, start=None):
 		svailable_actions=','.join([str(a+1) for a in available_actions])
 		move=None
 		while move is None: 
-			smove=input("your turn, what do you do ? You can play in cells %s. " % svailable_actions)
+			smove=input("your turn, what do you do ?")
 			if len(smove)>0: 
 				if smove in letters:
 					imove=letters.index(smove)
@@ -317,7 +259,7 @@ def play_human_gui(verbose=None, start=None):
 		new_board_b=board_b+board_a
 		print("After you play, the board is")
 		print_board_array(board_a, board_b)
-		print("%d - %d" % (ttt.array_to_integer(board_a + board_b), ttt.array_to_integer(board_b + board_a)))
+		#print("%d - %d" % (ttt.array_to_integer(board_a + board_b), ttt.array_to_integer(board_b + board_a)))
 
 		win=False
 		tie=False
@@ -328,42 +270,22 @@ def play_human_gui(verbose=None, start=None):
 			print("you win")
 			in_progress=False
 		if tie:
-			print("you tied")
+			print("tie")
 			in_progress=False 
 
-		alice.init_status(old_board, available_actions) 
-		alice.init_status(old_board_b, available_actions) 
-		if win:
-			alice.learn_points(board_a+board_b, 2)
-			alice.learn_points(board_b+board_a, -2)
-		if tie:
-			alice.learn_points(board_a+board_b, -1)
-			alice.learn_points(board_b+board_a, -1)
-		alice.learn_path(old_board, move, new_board) 
-		alice.learn_path_opponent(old_board_b, move, new_board_b)
-
 		if in_progress:
-			win, tie, move, play_random=one_move(alice, board_b, board_a)
-			if play_random:
-				print("note : i picked at random")
+			win, tie, move=one_move(alice, board_b, board_a)
 			print("I play in the cell %d" % (move+1))
 			print("The board is now") 
 			print_board_array(board_a, board_b)
-			print("%d - %d" % (ttt.array_to_integer(board_a + board_b), ttt.array_to_integer(board_b + board_a)))
+			#print("%d - %d" % (ttt.array_to_integer(board_a + board_b), ttt.array_to_integer(board_b + board_a)))
 			if win:
 				print("I win")
 				in_progress=False
 			else:
 				if tie:
-		#			print("I tie")
+					print("tie")
 					in_progress=False 
-
-	#alice.save() # in case i learned somethg # no save
-
-
-def g(): 
-	play_human_gui(verbose=True, start=True)
-
 
 def play_all_games(maxcpt=None, verbose=False):
 	a=[0,1,2,3,4,5,6,7,8]
@@ -428,34 +350,31 @@ def play_all_games(maxcpt=None, verbose=False):
 			
 	print("")
 
-		
+def print_tree(minmax=False):
+	if minmax:
+		s=alice.print_tree_minmax(0, level_down=99)
+	else:
+		s=alice.print_tree_maxmin(0, level_down=99)
+	pydoc.pager('\n'.join(s))
+
+def print_help():
+	print("Commands:")
+	print("")
+	print("play_human_gui(verbose=False|True, start=False|True")
+	print("loop(cpt)")
+	print("print_tree(minmax=False|True)")
 
 
+def init():
+	if not alice.try_load():
+		alice.verbose=False
+		print("Initialization")
+		print("playing all games possible")
+		play_all_games(verbose=False)
+		print("calculate all paths in the tree")
+		alice.calculate(0)
+		print("saving")
+		alice.save()
 
-
-
-
-
-
-
-if alice.try_load():
-	print("loaded")
-
-if len(sys.argv)>1:
-	if sys.argv[1]=='run':
-		multiples_games(100000, verbose=True)
-	if sys.argv[1]=='tree':
-		alice.print_tree_maxmin(0, level_down=99)
-	if sys.argv[1]=='play':
-		sys.argv.remove('play')
-		if sys.argv.count('start')==1:
-			start=True
-		if sys.argv.count('nostart')==1:
-			start=False
-		if sys.argv.count('verbose')==1:
-			verb=True
-		if sys.argv.count('noverbose')==1:
-			verb=False
-
-		main.play_human_gui(verb, start)
-
+init()
+print_help()

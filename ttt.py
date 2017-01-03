@@ -57,11 +57,9 @@ class AI:
 		self.random=True
 
 	def play_integer(self, id_, possible_actions): 
-		play_random=False
 		# we check unknown outcomes. If any we just try it
 		unknown=[a for a,b in self.statuses[id_].lt.items() if b is None]
 		if len(unknown) > 0:
-			play_random=True
 			action=unknown[0]
 			if self.verbose:
 				print("I never tried action %d, so i'm gonna try now" % action)
@@ -71,7 +69,7 @@ class AI:
 				action=random.choice(possible_actions)
 			else:
 				action=s.maxmin_action
-		return action, play_random
+		return action
 
 	def play(self, input_, possible_actions): 
 		id_=array_to_integer(input_) 
@@ -164,37 +162,40 @@ class AI:
 		pickle.dump(self.statuses, open('ttt.dat', 'wb'))
 
 	def print_tree_minmax(self, id_, action=-1, shift='', level_down=4): 
+		res=[]
 		if len(shift)>60:
 			raise Exception("infinite loop")
 		if id_ is None:
-			print("%s\\ %d->??" % (shift, action))
+			res.append("%s\\ %d->??" % (shift, action))
 		else:
 			s=self.statuses.get(id_)
 			if s is not None:
-				print("%s\ %d->%d (min=%s, action=%s)" % (shift, action, id_, s.minmax, s.minmax_action))	
+				res.append("%s\ %d->%d (min=%s, action=%s)" % (shift, action, id_, s.minmax, s.minmax_action))	
 				level_down-=1
 				if level_down==0:
-					print("%s    \\..." % shift)
+					res.append("%s    \\..." % shift)
 				else:
 					for i in sorted(s.lto.items(), reverse=True):
-						self.print_tree_maxmin(i[1], i[0], shift+'    ', level_down)
+						res+=self.print_tree_maxmin(i[1], i[0], shift+'    ', level_down)
+			return res
 
 	def print_tree_maxmin(self, id_, action=-1, shift='', level_down=4): 
+		res=[]
 		if len(shift)>60:
 			raise Exception("infinite loop")
 		if id_ is None:
-			print("%s\ %d->??" % (shift, action))
+			res.append("%s\ %d->??" % (shift, action))
 		else:
 			s=self.statuses.get(id_)
 			if s is not None:
-				print("%s\ %d->%d (max=%s, action=%s)" % (shift, action, id_, s.maxmin, s.maxmin_action))
+				res.append("%s\ %d->%d (max=%s, action=%s)" % (shift, action, id_, s.maxmin, s.maxmin_action))
 				level_down-=1
 				if level_down==0:
-					print("%s    \\..." % shift)
+					res.append("%s    \\..." % shift)
 				else:
 					for i in sorted(s.lt.items()):
-						self.print_tree_minmax(i[1], i[0], shift+'    ', level_down) 
-
+						res+=self.print_tree_minmax(i[1], i[0], shift+'    ', level_down) 
+		return res
 
 	def try_load(self):
 		if os.path.exists('ttt.dat'):
