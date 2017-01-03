@@ -357,10 +357,10 @@ def print_tree(minmax=False):
 		s=alice.print_tree_maxmin(0, level_down=99)
 	pydoc.pager('\n'.join(s))
 
-def print_help():
+def help():
 	print("Commands:")
 	print("")
-	print("play_human_gui(verbose=False|True, start=False|True")
+	print("play_human_gui(verbose=False|True, start=False|True)")
 	print("loop(cpt)")
 	print("print_tree(minmax=False|True)")
 
@@ -377,4 +377,3 @@ def init():
 		alice.save()
 
 init()
-print_help()
