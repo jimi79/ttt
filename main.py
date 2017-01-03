@@ -175,8 +175,8 @@ def one_game(history=False, verbose=False):
 
 	if history:
 		print_history(history_boards)
-		print_history_points(history_points)
-		print_history_points(history_points_o)
+		#print_history_points(history_points)
+		#print_history_points(history_points_o)
 
 	return winner, history_moves
 
@@ -357,7 +357,13 @@ def print_tree(minmax=False):
 		s=alice.print_tree_maxmin(0, level_down=99)
 	pydoc.pager('\n'.join(s))
 
-def help():
+def loop(cpt):
+	alice.random=True
+	for i in range(cpt):
+		one_game(history=True, verbose=False) 
+		print("")
+
+def help_ttt():
 	print("Commands:")
 	print("")
 	print("play_human_gui(verbose=False|True, start=False|True)")
